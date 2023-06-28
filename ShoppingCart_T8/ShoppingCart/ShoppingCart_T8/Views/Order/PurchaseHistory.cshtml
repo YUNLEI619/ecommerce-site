@@ -1,0 +1,185 @@
+﻿@model IEnumerable<OrderItemViewModel>
+
+@{
+    ViewData["Title"] = "Purchase History";
+}
+
+@if (Model == null || Model.Count() < 1)
+{
+    <div class="row-cols-auto">
+        <img class="rounded mx-auto d-block" src="/images/NOPURCHASE.png" alt="We would be happy to have you as our customer :^)">
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var item in Model)
+        {
+            <div class="col-6">
+                <div class="card mb-3" style="max-width: 540px;">
+                    <div class="row g-0">
+                        <div class="col-md-12">
+                            <div class="card-header align-content-center justify-content-center">
+                                <div class="object-fit: contain;">
+                                    <img class="card-img-top" src="@item.VM_OrderItemImage" alt="@item.VM_OrderItemName">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="card-body align-content-center justify-content-center">
+                                <p></p>
+                                <div class="container-fluid px-2 py-1 my-2 fw-bold text-center h4"> @item.VM_OrderItemName </div>
+                                <p class="card-text">
+                                    <div class="container-fluid px-2 m-2 fw-normal text-center lead"> @item.VM_OrderItemDescription </div>
+                                </p>
+                                <div class="row align-content-center justify-content-center">
+                                    <button role="button" class="btn btn-success text-white text-center col-10 shadow-lg border px-3 py-2 mx-2">
+                                        Download
+                                    </button> @*CA scope no need to download sample files*@
+                                </div>
+                                <p></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6">
+                <div class="card mb-3" style="max-width: 540px;">
+                    <div class="row g-0">
+                        <div class="col-md-12">
+                            <div class="card-body align-content-center justify-content-center">
+                                <table>
+                                    <tr>
+                                        <td width="30%">
+                                            <p>Rating:</p>
+                                        </td>
+                                        <td class="starset">
+                                            @{
+                                                string star = ViewBag.CustomerId + "_" + item.VM_OrderItemProductId + "_"; //constructing Id for each starset
+                                                string starId; //each starId shares same set of parent starset Id, within which contains the score information
+                                                <form asp-controller="Product" asp-action="Ratings" method="post">
+                                                    @for (int i = 1; i < 6; i++)
+                                                    {
+                                                        starId = star + i.ToString();
+                                                        if (item.VM_OrderItemReviewScore < i)
+                                                        {
+                                                            <img src="/images/Stars_Single0_Transparent.png" alt="Seeing No Stars?" id="@starId" class="@star" name="@star" onclick="toggleStar(this)">
+                                                        }
+                                                        else
+                                                        {
+                                                            <img src="/images/Stars_Single1_Transparent.png" alt="Seeing Stars?" id="@starId" class="@star" name="@star" onclick="toggleStar(this)">
+                                                        }
+                                                    }
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width="30%">
+                                            <p>Purchase On:</p>
+                                        </td>
+                                        <td>
+                                            <p> @item.VM_OrderItemPurchasedDateTime</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width="30%">
+                                            <p>Quantity:</p>
+                                        </td>
+                                        <td>
+                                            <p> @item.VM_OrderItemQuantity</p>
+
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width="30%">
+                                            <p>Activation Code:</p>
+                                        </td>
+                                        <td>
+                                            @if (item.VM_OrderItemQuantity > 1)
+                                            {
+                                                <select id="inputState" class="form-control mb-3">
+                                                    @foreach (OrderItemCode oicode in item.VM_OrderItem_ActivationCode)
+                                                    {
+                                                        <option>@oicode.OrderItem_ActivationCode</option>
+                                                    }
+                                                </select>
+                                            }
+                                            else
+                                            {
+                                                <p>@item.VM_OrderItem_ActivationCode[0].OrderItem_ActivationCode</p>
+                                            }
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+
+@section Scripts {
+    @*Javascript test to work cross Razor Pages via section*@
+    <script>
+        function Main_PurchaseHistory() {
+            console.log("Main_PurchaseHistory()") //page loaded successfully
+        }
+
+        function toggleStar(element) {
+            //console.log(element.id);
+            var arr = element.id.split("_");
+            let data = new FormData();
+            data.append("CustomerId", arr[0]);
+            data.append("ProductId", arr[1]);
+            data.append("Ratings", arr[2]);
+
+            //forward to server for database updates
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/Product/ReviewRatings");
+            xhr.onload = function () {
+                if (this.readyState == XMLHttpRequest.DONE) {
+                    if (this.status === 200) { console.log("toggleStar(): success = " + this.responseText); toggleStars(element); return; } //reduce impact to user by only logging to console if any issues
+                    else { console.error("toggleStar(): Invalid response from server"); return null; }
+                }
+                else { console.error("toggleStar(), Error: " + xhr.statusText); return null; }
+            };
+            xhr.onerror = function () { console.error("toggleStar(): Network Error"); };
+            xhr.send(data);
+        }
+
+        //For CA Professor's requirement for same Product review to be applied to all orders of same product:
+        //Update Stars display only after server is updated, hance state sync-ed
+        function toggleStars(element) {
+            var rating = element.parentElement;
+            var stars = rating.getElementsByTagName('img');
+            var index = Array.prototype.indexOf.call(stars, element); //index on the arry of stars, 0 - 4
+
+            var products = document.getElementsByClassName("starset");
+            //console.log("Products.length " + products.length);
+            for (var i = 0; i < products.length; i++) { //loop the products
+                var productStars = products[i].getElementsByClassName(element.name);
+                //console.log("productStars.length " + productStars.length);
+                for (var j = 0; j < productStars.length; j++) { //loop each stars picture display
+                    if (productStars[j] != element) {
+                        for (var h = 0; h <= index; h++) {
+                            //console.log("- 1 - stars[h]" + stars[h] + " " + index + " h = " + h);
+                            productStars[h].src = "/images/Stars_Single1_Transparent.png";
+                        }
+                        for (var k = index + 1; k < stars.length; k++) {
+                            //console.log("- 0 - stars[k]" + stars[k] + " " + index + " k = " + k);
+                            productStars[k].src = "/images/Stars_Single0_Transparent.png";
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log("Purchase History")
+        window.onload = Main_PurchaseHistory;
+    </script>
+}

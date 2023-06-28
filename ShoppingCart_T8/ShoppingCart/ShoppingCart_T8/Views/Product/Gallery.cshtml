@@ -1,0 +1,228 @@
+﻿@model IEnumerable<ProductViewModel>
+
+@{
+    ViewData["Title"] = "Product Gallery";
+}
+
+@*Search Bar - instead of form GET, use Javacript to filter product instead, as the CA scope for search bar is on Enter and Backspace input.*@
+<div class="text-center p-3">
+    <input id="searchbar" type="text" placeholder="Search" name="search" class="col-12 rounded-3" value="@ViewBag.search" />
+</div>
+
+@if (Model == null)
+{
+    @ViewBag.Msg_Error_ProductGallery
+}
+else
+{
+    <div class="row">
+        @foreach (var item in Model)
+        {
+            <div class="col-md-4 col-xs-6 border-primary mb-3 product-main-card">
+                <div class="card mb-3" style="max-width: 540px;">
+                    <div class="row g-0">
+                        <div class="col-md-12">
+                            <div class="card-header align-content-center justify-content-center">
+                                <div class="object-fit: contain;">
+                                    <img class="card-img-top" src="@item.VM_ProductImage" alt="@item.VM_ProductName">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="card-body align-content-center justify-content-center">
+                                <p></p>
+                                <div class="container-fluid px-2 py-1 my-2 fw-bold text-center h4">
+                                    <span class="s_name" name="s_name"> @item.VM_ProductName </span>
+                                </div>
+                                <p class="card-text">
+                                    <div class="container-fluid px-2 m-2 fw-normal text-center lead">
+                                        <span class="s_desc" name="s_desc"> @item.VM_ProductDescription </span>
+                                    </div>
+                                </p>
+                                <div class="container-fluid text-center">
+                                    @*CA Scope was rounded score, to integer only*@
+                                    @switch (item.VM_ProductStars)
+                                    {
+                                        case 0:
+                                            <img class="stars" src="/images/Stars_Set0_Transparent.png" alt="@item.VM_ProductStars">
+                                            break;
+                                        case 1:
+                                            <img class="stars" src="/images/Stars_Set1_Transparent.png" alt="@item.VM_ProductStars">
+                                            break;
+                                        case 2:
+                                            <img class="stars" src="/images/Stars_Set2_Transparent.png" alt="@item.VM_ProductStars">
+                                            break;
+                                        case 3:
+                                            <img class="stars" src="/images/Stars_Set3_Transparent.png" alt="@item.VM_ProductStars">
+                                            break;
+                                        case 4:
+                                            <img class="stars" src="/images/Stars_Set4_Transparent.png" alt="@item.VM_ProductStars">
+                                            break;
+                                        case 5:
+                                            <img class="stars" src="/images/Stars_Set5_Transparent.png" alt="@item.VM_ProductStars">
+                                            break;
+                                        default:
+                                            <img class="stars" src="/images/Stars_Set5_Transparent.png" alt="@item.VM_ProductStars">
+                                            break;
+                                    }
+                                </div>
+                                <form asp-controller="Cart" asp-action="Add" method="post">
+                                    <input type="hidden" name="ProductId" value="@item.VM_ProductId" /> @*for Model Bind to Action parameter*@
+                                    <input type="hidden" name="SessionId" value="@ViewBag.Session" />
+                                    <div class="row align-content-center justify-content-center">
+                                        <button type="submit" class="btn btn-success text-white text-center col-10 shadow-lg border px-3 py-2 mx-2 cart-add" id=@("Product"+item.VM_ProductId)>
+                                            <i class="bi bi-cart-plus"></i> $@item.VM_ProductPrice.ToString() - Add to Cart
+                                        </button>
+                                    </div>
+                                </form>
+                                <p></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+<div id="not-found" class="row-cols-auto" style="display:none">
+    <img class="rounded mx-auto d-block" src="/images/NOTFOUND0.png" alt="We took a good look at your search... Taking a good look...">
+</div>
+<hr />
+
+@section Scripts {
+    <script>
+        function Main() {
+            //evemt listemnrs for trigger AJAX function to update string
+            var eButton = document.getElementsByClassName("cart-add");
+            for (var i = 0; i < eButton.length; i++) { eButton[i].addEventListener('click', AJAX_AddToCart); }
+
+            const eBar = document.getElementById("searchbar");
+            eBar.addEventListener('keyup', JS_Search); //keydown will be 1 char less from the value input bar, keyup as if input + keydown
+
+            (function () {
+                if (window.localStorage) {
+                    if (!localStorage.getItem('firstLoad')) {
+                        localStorage['firstLoad'] = true;
+                        window.location.reload();
+                    }
+                    else
+                        localStorage.removeItem('firstLoad');
+                }
+            })();
+
+            addLoadEvent(AJAX_UpdateCartCount());
+        }
+
+        function JS_Search(event) //single string search, ENTER go to server
+        {
+            console.log("JS_Search1() = " + event.target.value);
+            console.log("JS_Search1() keyCode = " + event.keyCode);
+
+            document.getElementById("not-found").style.display = "none";
+            const searchTerm = event.target.value.toLowerCase();
+            const p_card = document.querySelectorAll(".product-main-card");
+            const p_name = document.getElementsByName("s_name");
+            const p_desc = document.getElementsByName("s_desc");
+
+            var count = p_card.length;
+            if (event.keyCode === 8 || event.keyCode === 46 || event.keyCode === 13) //Handling BACKSPACE, DELETE, Cut action etc
+            {
+                if (event.target.value.trim() == "" || event.target.value == " " || event.target.value == null) {
+                    for (var e = 0; e < p_card.length; e++) { p_card[e].style.display = "block"; }
+                    return;
+                }
+                else {
+                    var inputs = event.target.value.split(" "); //to search for more than one input seperated by " " space
+                    for (var i = 0; i < p_card.length; i++) {
+                        let t_name = p_card[i].getElementsByClassName("s_name")[0].innerHTML;
+                        let t_desc = p_card[i].getElementsByClassName("s_desc")[0].innerHTML;
+                        if ((t_name.toLowerCase().includes(searchTerm)) || (t_desc.toLowerCase().includes(searchTerm))) { p_card[i].style.display = ""; }
+                        else { p_card[i].style.display = "none"; --count; }
+                    }
+                }
+
+                if (count === 0) {
+                    document.getElementById("not-found").style.display = "block";
+                    console.log("ALL PRODUCT NOT DISPLAYED! SHOW MESSAGE!");
+                }
+            }
+        }
+
+        function AJAX_AddToCart(event) {
+            // Prevent the form from submitting normally
+            event.preventDefault();
+            // Get the data to send to the server
+            let productId = event.target.parentElement.parentElement.querySelector("input[name='ProductId']").value;
+            let sessionId = event.target.parentElement.parentElement.querySelector("input[name='SessionId']").value;
+            let data = new FormData();
+            data.append("ProductId", productId);
+            data.append("SessionId", sessionId);
+
+            // Send the data to the server using AJAX
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", "/Cart/Add");
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText); // Handle the response from the server
+                    AJAX_UpdateCartCount()
+                }
+                else {
+                    console.error(xhr.statusText);
+                }
+            };
+            xhr.onerror = function () { console.error(xhr.statusText); };
+            xhr.send(data);
+        }
+
+        function AJAX_UpdateCartCount() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/Cart/UpdateCartCount");
+
+            xhr.onload = function () {
+                if (this.readyState == XMLHttpRequest.DONE) {
+                    if (this.status === 200) {
+                        var data = JSON.parse(this.responseText);
+                        console.log(data.success);
+                        if (data && data.success) {
+                            console.log(data.success); //if success update count
+                            let cartTotal = document.getElementById("cart-count");
+                            cartTotal.innerHTML = data.success;
+                            return data.success;
+                        } //else track error
+                        else {
+                            console.error("Invalid response from server");
+                            return null;
+                        }
+                    }
+                    else {
+                        console.error("Error: " + xhr.statusText);
+                        return null;
+                    }
+                }
+            };
+            xhr.onerror = function () {
+                console.error("Network error");
+                return null;
+            };
+
+            xhr.send();
+        }
+
+        function addLoadEvent(func) { //to ensure function loads properly, referenced from web
+            var oldonload = window.onload;
+            if (typeof window.onload != "function") {
+                window.onload = func;
+            } else {
+                window.onload = function () {
+                    if (oldonload) {
+                        oldonload();
+                    }
+                    func();
+                }
+            }
+        }
+
+        console.log("Product_Gallery");
+        window.onload = Main();
+    </script>
+}

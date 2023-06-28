@@ -1,0 +1,265 @@
+﻿@model Dictionary<string,CartItemViewModel>
+@*
+    When user clicked on Shopping Cart icon
+*@
+
+@{
+    ViewData["Title"] = "View Cart";
+}
+
+<style>
+
+    .cart-item-quantity {
+        height: 25px;
+        width: 50px;
+        border-radius: 5px;
+        border: 1px solid #55CCFF;
+        background-color: #eee;
+        color: #111;
+        padding: 0;
+        text-align: center;
+        font-size: 1em;
+        margin-right: 25px;
+    }
+
+</style>
+
+<form id="cart-view-form" method="post">
+
+        @foreach (var item in Model)
+        {
+            <div class="row">
+                <div class="col-md-4 col-xs-6 border-primary mb-3">
+                    <div class="card mb-3" style="max-width: 540px;">
+                        <div class="row g-0">
+                            <div class="col-md-12">
+                                <div class="card-header align-content-center justify-content-center">
+                                    <div class="object-fit: contain;">
+                                        <span class="cart-item-image"><img class="card-img-top" src="@item.Value.VM_CartItem_ProductImage" alt="@item.Value.VM_CartItem_ProducName"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="card-body align-content-center justify-content-center">
+                                    <p></p>
+                                    <div class="container-fluid px-2 py-1 my-2 fw-bold text-center h4"> <span class="cart-item-name">@item.Value.VM_CartItem_ProducName</span></div>
+                                    <p class="card-text">
+                                        <div class="container-fluid px-2 m-2 fw-normal text-center lead"> <span class="cart-item-desc">@item.Value.VM_CartItem_ProductDescription</span></div>
+                                    </p>
+                                    <p></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="cart-item-details">
+                        <div class="paragraph-spacer"></div>
+                        <table>
+                            <tr>
+                                <td>
+                                    <p style="font-size:20px"><strong>Price</strong></p>
+                                </td>
+                                <td>
+                                    <p style="font-size:20px"><strong>:</strong></p>
+                                </td>
+                               <td>
+                                    <p style="font-size:20px"><span class="cart-item-price ms-3 mt-3">$@(item.Value.VM_CartItem_ProductPrice)</span></p>
+                               </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p style="font-size:20px"><strong>Sub-Total</strong></p>
+                                </td>
+                                <td>
+                                    <p style="font-size:20px"><strong>:</strong></p>
+                                </td>
+                                <td>
+                                    <p style="font-size:20px"><span class="cart-item-subtotal ms-3"></span></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p style="font-size:20px"><strong>Quantity</strong></p>
+                                </td>
+                                <td>
+                                    <p style="font-size:20px"><strong>:</strong></p>
+
+                                </td>
+                                <td>
+                                    <input type="number" class="cart-item-quantity ms-3" value="@(item.Value.VM_CartItem_ProductQuantity)" />
+                                    <input type="hidden" oninput="inputQuantityEvent()" name="ProductId" value="@item.Value.VM_CartItem_ProductId">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="3">
+                                    <button class="btn btn-outline-danger cart-item-remove" style="font-size:20px" type="button">
+                                        REMOVE
+                                    </button>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+</form>
+
+<div class="row-cols-auto" id="empty-cart0" style="display: none">
+    <img class="rounded mx-auto d-block" src="/images/EMPTYCART.png" alt="EMPTY CART! Check out what we have available!">
+</div>
+
+@section Scripts {
+    @*Javascript test to work cross Razor Pages via section*@
+    <script>
+        function Main()
+        {
+            var eQuantity = document.getElementsByClassName("cart-item-quantity");
+            for (var i = 0; i < eQuantity.length; i++)
+            {
+                eQuantity[i].addEventListener('change', inputQuantityEvent);
+                eQuantity[i].addEventListener('blur', inputQuantityEvent);
+                eQuantity[i].addEventListener('input', inputQuantityEvent);
+            }
+
+            //Prevents sending the form to server, updates via AJAX instead
+            document.getElementById("cart-view-form").addEventListener("submit", function (event) {
+                event.preventDefault();
+            });
+
+            var eButtonRemove = document.getElementsByClassName("cart-item-remove");
+            for (var r = 0; r < eButtonRemove.length; r++)
+            {
+                var button = eButtonRemove[r];
+                button.addEventListener("click", RemoveCartItem)
+            }
+
+            UpdateCartPrices();
+            addLoadEvent(CheckEmpty());
+        }
+
+        function CheckEmpty()
+        {
+            var eCartEmptyCheck = document.getElementsByClassName("cart-item-details");
+            if (eCartEmptyCheck.length < 1) {
+                document.getElementById("empty-cart0").style.display = "block";
+                document.getElementById("empty-cart1").style.display = "none";
+                document.getElementById("empty-cart2").style.display = "none";
+            }
+            else
+            {
+                document.getElementById("empty-cart0").style.display = "none";
+                document.getElementById("empty-cart1").style.display = "";
+                document.getElementById("empty-cart2").style.display = "";
+            }
+        }
+
+        function RemoveCartItem(event) {
+            AJAX_RemoveItem_UpdateCart(event); //update server first
+
+            var removal = event.target; //to reach the entire component <div> covering the entire 'row'
+            removal.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.remove();
+
+            CheckEmpty();
+            UpdateCartPrices();
+        }
+
+        function AJAX_RemoveItem_UpdateCart(event) {
+            var pid = event.target.parentElement.parentElement.parentElement.querySelector("input[name='ProductId']").value; //to reach out
+            let data = new FormData();
+            data.append("ProductId", pid);
+
+            // Send the data to the server using AJAX
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", "/Cart/UpdateCartRemove");
+            xhr.onload = function () {
+                if (xhr.status === 200) {   // Handle the response from the server
+                    console.log("AJAX_RemoveItem_UpdateCart(): Server_Quantity = " + JSON.parse(xhr.responseText));
+                }
+                else {
+                    console.error("AJAX_RemoveItem_UpdateCart(): " + xhr.statusText);
+                }
+            };
+            xhr.onerror = function () { console.error("AJAX_RemoveItem_UpdateCart(): " + xhr.statusText); };
+            xhr.send(data);
+        }
+
+        function inputQuantityEvent(event)
+        {
+            var input = event.target;
+            if (isNaN(input.value) || input.value < 1) { input.value = 1; } /* basic input validation, min 1 max 99 */
+            if (input.value > 99) { input.value = 99; } //0 ~ 99 per order item
+
+            UpdateCartPrices();
+            AJAX_UpdateCart(event);
+        }
+
+        function UpdateCartPrices()
+        {
+            var cartItems = document.getElementsByClassName("cart-item-details"); /*find all the elements with the specified class-name*/
+            var total = 0.00; //default to zero
+            if (cartItems.length > 0)
+            {
+                for (var i = 0; i < cartItems.length; i++) /*running thru all the elements in the returned array from .getElementsByClassName()*/ {
+                    var ePrice = cartItems[i].getElementsByClassName("cart-item-price")[0]; /*using [0] to workaround NO 'id' attribute*/
+                    var eQuantity = cartItems[i].getElementsByClassName("cart-item-quantity")[0]; /*going direct to the element that contains the data*/
+                    var price = parseFloat(ePrice.innerText.replace("$", "")); /*to get actual data, remove the "$" symbol and parse to float type*/
+                    var quantity = eQuantity.value; /*input with type="number "has NO innerText or innerHTML content*/
+                    cartItems[i].getElementsByClassName("cart-item-subtotal")[0].innerHTML = (Math.round(quantity * price * 100) / 100).toLocaleString('us-US', { style: 'currency', currency: 'USD' });/*update subtotals in case of multi-selector*/
+                    total = total + (price * quantity);
+                }
+                total = Math.round(total * 100) / 100; /*to ensure 2 decimal places at all time*/
+
+            }
+            document.getElementById("cart-total").innerHTML = total.toLocaleString('us-US', { style: 'currency', currency: 'USD' });
+        }
+
+        function AJAX_UpdateCart(event) 
+        {
+            var q = event.target.value;
+            var p = event.target.parentElement.parentElement.querySelector("input[name='ProductId']").value;
+            let data = new FormData();
+            data.append("ProductId", p);
+            data.append("Quantity", q);
+
+            // Send the data to the server using AJAX
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", "/Cart/UpdateCart");
+            xhr.onload = function ()
+            {
+                if (xhr.status === 200)
+                {   // Handle the response from the server
+                    console.log("UpdateCart(): Server_Quantity = " + JSON.parse(xhr.responseText));
+                    return "success";
+                }
+                else
+                {
+                    console.error("UpdateCart(): " + xhr.statusText);
+                    return "failure";
+                }
+            };
+            xhr.onerror = function () { console.error("UpdateCart(): " + xhr.statusText); };
+            xhr.send(data);
+        }
+
+        function addLoadEvent(func) { //to ensure function loads properly, referenced from web
+            var oldonload = window.onload;
+            if (typeof window.onload != "function") {
+                window.onload = func;
+            } else {
+                window.onload = function () {
+                    if (oldonload) {
+                        oldonload();
+                    }
+                    func();
+                }
+            }
+        }
+
+        console.log("View_Cart");
+        window.onload = Main(); //immediate execute
+        /*window.onbeforeunload = ?; *///as a backup reference
+        //update shopping cart strings direct in Localstorage cuz of guest? OR to database? requirement unclear..
+    </script>
+}

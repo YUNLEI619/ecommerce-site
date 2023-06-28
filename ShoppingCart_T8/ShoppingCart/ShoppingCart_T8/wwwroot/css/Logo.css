@@ -1,0 +1,66 @@
+﻿@font-face {
+    font-family: 'Rote';
+    src: url('Rote-Regular.ttf');
+}
+
+h1 {
+    font-family: 'Rote', sans-serif;
+    font-weight: 800;
+    font-size: 5em;
+    width: 5em;
+    line-height: 0.9em;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 1.5em;
+    margin-top: calc(50vh - 1em);
+}
+
+.rainbow-text {
+    background: #CA4246;
+    background-color: #CA4246;
+    background: conic-gradient( #CA4246 16.666%, #E16541 16.666%, #E16541 33.333%, #F18F43 33.333%, #F18F43 50%, #8B9862 50%, #8B9862 66.666%, #476098 66.666%, #476098 83.333%, #A7489B 83.333%);
+    background-size: 57%;
+    background-repeat: repeat;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: rainbow-text-animation-rev 0.5s ease forwards;
+    cursor: pointer;
+}
+
+    .rainbow-text:hover {
+        animation: rainbow-text-animation 0.5s ease forwards;
+    }
+
+@keyframes rainbow-text-animation {
+    0% {
+        background-size: 57%;
+        background-position: 0 0;
+    }
+
+    20% {
+        background-size: 57%;
+        background-position: 0 1em;
+    }
+
+    100% {
+        background-size: 300%;
+        background-position: -9em 1em;
+    }
+}
+
+@keyframes rainbow-text-animation-rev {
+    0% {
+        background-size: 300%;
+        background-position: -9em 1em;
+    }
+
+    20% {
+        background-size: 57%;
+        background-position: 0 1em;
+    }
+
+    100% {
+        background-size: 57%;
+        background-position: 0 0;
+    }
+}

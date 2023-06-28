@@ -1,0 +1,114 @@
+﻿@model LogStats
+
+@{
+    ViewData["Title"] = "Home (Stats) Page";
+
+    LogStats stats = Model;
+    Dictionary<string, int> dict = stats.Get();
+
+    //The default HomeController, largely used as a test bed for experimental codes, especially Javascripts ;^p
+}
+
+<h3>Analytics: Stats</h3>
+<hr />
+<br />
+@foreach (KeyValuePair<string, int> pair in dict)
+{
+    <h6>
+        @pair.Key (@pair.Value)
+    </h6>
+    @Html.Raw("<br /><hr /><br />")
+}
+
+<div class="text-center">
+    @*<h1>Pardon this little Easter Egg _(v_v)_</h1>*@
+    <h1>Pardon<br />this little<br />Easter Egg<br />_(v_v)_</h1>
+</div>
+
+
+@section Scripts {
+    <script>
+        function Main() {
+            var Key = "COOKIE_GUEST_CARTID";
+
+            // Get all the cookies for the current document
+            var cookies = document.cookie.split(';');
+
+            // Loop through the cookies to find the one you want
+            for (let i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+
+                // Check if the cookie starts with the name you're looking for
+                if (cookie.startsWith(Key)) {
+                    // Extract the cookie name by splitting the cookie string
+                    var cookieName = cookie.split('=')[0];
+                    var cookieValue = cookie.split('=')[1];
+                    // Do something with the cookie name
+                    console.log(cookieName);
+                    console.log(cookieValue);
+                }
+            }
+        }
+
+        function getCookieValue(c_name) {
+            var cookies = document.cookie.split(';');
+            //var c_name = "COOKIE_GUEST_CARTID=";
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                console.log("Main() : cookie.for = " + cookie)
+                while (cookie.charAt(0) == ' ') {
+                    cookie = cookie.substring(1);
+                    console.log("Main() : cookie.substring(1) = " + cookie.substring(1))
+                }
+                if (cookie.indexOf(c_name) == 0) {
+                    console.log("Main() : cookie.substring(c_name.length, cookie.length) = " + cookie.substring(c_name.length, cookie.length))
+                    return cookie.substring(c_name.length + 1, cookie.length);
+                }
+            }
+            return null;
+        }
+
+        function setCookieLocal(c_name, new_value, expiredays) { //Set cookie to client's browser local storage, "COOKIE_GUEST_CARTID" mainly
+            console.log("setCookieLocal(): COOKIE = " + c_name);
+            var exdate = new Date();
+            exdate.setDate(exdate.getDate() + expiredays);
+            console.log("expiry set = " + exdate.toUTCString());
+            if (typeof localStorage != "undefined") {
+                console.log("setCookieLocal(): has local storage, value set = " + new_value);
+                localStorage.setItem(c_name, new_value);
+            }
+            else {
+                console.log("getCookieLocal(): NO local storage, cookie value set = " + escape(new_value));
+                document.cookie = c_name + "=" + escape(new_value) + ((expiredays === null) ? "" : ";expires=" + exdate.toUTCString());
+            }
+        }
+
+        function getCookieLocal(c_name) { //Get cookie to client's browser local storage
+            console.log("getCookieLocal(): COOKIE = " + c_name);
+            if (typeof localStorage != "undefined") {   //client's browser has localStorage
+                var cookieString = localStorage.getItem(c_name);
+                if (cookieString != null || cookieString != "") {
+                    console.log("getCookieLocal(): has local storage!");
+                    console.log("getCookieLocal(): c_name is " + c_name);
+                    return localStorage.getItem(c_name);
+                }
+                else { console.log("CANNOT FIND COOKIE = " + c_name); } //call setCookieLocal(c_name, "", 1);
+            }
+            else //client's browser no localStorage
+            {
+                console.log("getCookieLocal(): no local storage!");
+                if (document.cookie.length > 0)  //has cookies
+                {
+                    var c_start = document.cookie.indexOf(c_name + "=");
+                    if (c_start !== -1) {
+                        console.log("getCookieLocal(): substring returned is " + getCookieSubstring(c_start, c_nam));
+                        return getCookieSubstring(c_start, c_name);
+                    }
+                }
+                return ""; //no cookies
+            }
+        }
+        console.log("Home_Test");
+        window.onload = Main();
+    </script>
+}
